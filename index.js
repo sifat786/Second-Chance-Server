@@ -60,17 +60,22 @@ const client = new MongoClient(uri, {
   }
 });
 
+//! collections:
+let userCollection;
+let petCollection;
+let adoptReqCollection;
+let donationCollection;
+let donationCampaignsCollection;
 
 async function run() {
     try {
-        // await client.connect();
+        await client.connect();
 
-        //! collections:
-        const userCollection = client.db("secondChance").collection("users");
-        const petCollection = client.db("secondChance").collection("pets");
-        const adoptReqCollection = client.db("secondChance").collection("adoptRequest");
-        const donationCollection = client.db("secondChance").collection("donations");
-        const donationCampaignsCollection = client.db("secondChance").collection("donationCampaigns");
+        userCollection = client.db("secondChance").collection("users");
+        petCollection = client.db("secondChance").collection("pets");
+        adoptReqCollection = client.db("secondChance").collection("adoptRequest");
+        donationCollection = client.db("secondChance").collection("donations");
+        donationCampaignsCollection = client.db("secondChance").collection("donationCampaigns");
 
 
         ///! JWT related api: 
@@ -135,11 +140,21 @@ async function run() {
 
         ///! Pets related api: 
         //! get all pets data:
-        app.get("/pets", async (req, res) => {
-            const query = { adopted: false };
-            const result = await petCollection.find(query).toArray();
-            res.send(result);
-        });
+        app.get('/pets', async (req, res) => {
+            const page = parseInt(req.query.page, 9) || 0;
+            const limit = 9;
+            const skip = page * limit;
+          
+            const pets = await petCollection.find({ adopted: false }).skip(skip).limit(limit).toArray();
+            const totalPets = await petCollection.countDocuments({ adopted: false });
+            const nextCursor = totalPets > skip + limit ? page + 1 : null;
+          
+            res.json({
+              pets,
+              nextCursor,
+            });
+        });          
+          
 
         //! get single pet data:
         app.get("/pets/:id", async (req, res) => {
@@ -557,9 +572,7 @@ async function run() {
             const id = payment?.petId;
             const query = { _id: new ObjectId(id) };
     
-            const findPetToAddMoney = await donationCampaignsCollection.findOne(
-            query
-            );
+            const findPetToAddMoney = await donationCampaignsCollection.findOne(query);
             const prevDonation = parseFloat(findPetToAddMoney?.getDonationAmount);
     
             const totalDonationAmount = userDonate + prevDonation;
