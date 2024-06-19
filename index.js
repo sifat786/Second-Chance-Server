@@ -222,6 +222,64 @@ async function run() {
             res.send(result);
         });
 
+        //! get pets data by user email (my added pets):
+        app.get("/my-added-pets/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { userEmail: email };
+            const result = await petCollection.find(query).toArray();
+            res.send(result);
+        });
+
+
+        ///! Adopt related api: 
+        //! get all adopt request:
+        app.get("/adopt-request", verifyToken, async (req, res) => {
+            const result = await adoptReqCollection.find().toArray();
+            res.send(result);
+        });
+
+        //! post adopt request:
+        app.post("/adopt-request", async (req, res) => {
+            const petAdopt = req.body;
+    
+    
+            //? checking is exist!
+            const query = { adoptId: petAdopt.adoptId };
+            const isExist = await adoptReqCollection.findOne(query);
+    
+            if (isExist) {
+            return res.send({ isExist: true });
+            }
+    
+            const result = await adoptReqCollection.insertOne(petAdopt);
+            res.send(result);
+        });
+
+        //! accept adopt request:
+        app.put(`/accept-adopt-req/:id`, verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+      
+            const updatedDocs = {
+              $set: {
+                accept: true,
+              },
+            };
+            const result = await adoptReqCollection.updateOne(filter, updatedDocs);
+            res.send(result);
+        });
+      
+        //! delete adopt request:
+        app.delete("/adopt-request/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const result = await adoptReqCollection.deleteOne(filter);
+            res.send(result);
+        });
+
+
+        
+
 
 
 
