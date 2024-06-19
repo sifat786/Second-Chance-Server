@@ -278,8 +278,256 @@ async function run() {
         });
 
 
-        
+        ///! Donation related api: 
+        //! get all donations data:
+        app.get("/donations", async (req, res) => {
+            const result = await donationCampaignsCollection.find().toArray();
+            res.send(result);
+        });
 
+        //! get single donation for donation-details:
+        app.get("/donations/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await donationCampaignsCollection.findOne(query);
+            res.send(result);
+        });
+
+        //! get all donation by admin:
+        app.get(
+            "/get-all-donation-by-admin",
+            verifyToken,
+            verifyAdmin,
+            async (req, res) => {
+            const result = await donationCampaignsCollection.find().toArray();
+            res.send(result);
+            }
+        );
+
+        //! get single donation by admin:
+        app.get("/get-single-donation-by-admin/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await donationCampaignsCollection.findOne(query);
+            res.send(result);
+        });
+
+        //! update donation data by admin:
+        app.put("/update-donation/:id", async (req, res) => {
+            const id = req.params.id;
+            const {
+            getDonationAmount,
+            lastDate,
+            longDescription,
+            maxDonationAmount,
+            name,
+            image,
+            shortDescription,
+            } = req.body;
+    
+            const filter = { _id: new ObjectId(id) };
+    
+            const updatedDocs = {
+            $set: {
+                getDonationAmount,
+                lastDate,
+                longDescription,
+                maxDonationAmount,
+                name,
+                image,
+                shortDescription,
+            },
+            };
+    
+            const result = await donationCampaignsCollection.updateOne(
+            filter,
+            updatedDocs
+            );
+            res.send(result);
+        });
+    
+        //! delete donation by admin:
+        app.delete("/delete-donation/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await donationCampaignsCollection.deleteOne(query);
+            res.send(result);
+        });
+    
+        //! pause - donation campaign:
+        app.put("/donation-status/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+    
+            const campaignItem = await donationCampaignsCollection.findOne(query);
+            const isPause = campaignItem?.pause;
+            console.log({ isPause });
+            if (isPause) {
+            const update = {
+                $set: {
+                pause: false,
+                },
+            };
+            const result = await donationCampaignsCollection.updateOne(
+                query,
+                update
+            );
+            res.send(result);
+            } else {
+            const update = {
+                $set: {
+                pause: true,
+                },
+            };
+            const result = await donationCampaignsCollection.updateOne(
+                query,
+                update
+            );
+            res.send(result);
+            }
+        });
+
+        //! mark adopted by admin: 
+        app.patch("/mark-adopt/:id", async (req, res) => {
+            const id = req.params.id;
+            console.log({ id });
+            const filter = { _id: new ObjectId(id) };
+            const markAdopt = {
+              $set: {
+                adopted: true,
+              },
+            };
+            const result = await petCollection.updateOne(filter, markAdopt);
+            res.send(result);
+        });
+        
+        //! mark not-adopted by admin:
+        app.patch(
+        "/mark-not-adopt/:id",
+        verifyToken,
+        verifyAdmin,
+        async (req, res) => {
+            const id = req.params.id;
+            console.log({ id });
+            const filter = { _id: new ObjectId(id) };
+            const markAdopt = {
+            $set: {
+                adopted: false,
+            },
+            };
+            const result = await petCollection.updateOne(filter, markAdopt);
+            res.send(result);
+        }
+        );
+
+        //! get my donation campaign: 
+        app.get("/my-donation-campaign/:email", async (req, res) => {
+            const userEmail = req.params.email;
+            const query = { email: userEmail };
+            const result = await donationCampaignsCollection.find(query).toArray();
+            res.send(result);
+        });
+    
+        //! get single donation data for my donation campaign update:
+        app.get("/my-donation-single-item/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await donationCampaignsCollection.findOne(query);
+            res.send(result);
+        });
+    
+        //! update my donation campaign info:
+        app.put("/update-donation-campaign-info/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const {
+            name,
+            image,
+            getDonationAmount,
+            maxDonationAmount,
+            shortDescription,
+            longDescription,
+            } = req.body;
+    
+            const updatedDocs = {
+            $set: {
+                name,
+                image,
+                getDonationAmount,
+                maxDonationAmount,
+                shortDescription,
+                longDescription,
+            },
+            };
+    
+            const result = await donationCampaignsCollection.updateOne(
+            query,
+            updatedDocs
+            );
+            res.send(result);
+        });
+    
+        app.put("/my-donation-campaign-pause/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const updatedDocs = {
+            $set: {
+                pause: true,
+            },
+            };
+            const result = await donationCampaignsCollection.updateOne(
+            query,
+            updatedDocs
+            );
+            res.send(result);
+        });
+    
+        //! ask for refund:
+        app.put("/ask-for-refund/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+    
+            const updateDocs = {
+            $set: {
+                refund: true,
+            },
+            };
+    
+            const result = await donationCollection.updateOne(query, updateDocs);
+            res.send(result);
+        });
+    
+        //! create donation campaign:
+        app.post("/create-donation-campaign", verifyToken, async (req, res) => {
+            const {
+            name,
+            email,
+            image,
+            lastDate,
+            maxDonationAmount,
+            shortDescription,
+            longDescription,
+            } = req.body;
+    
+            const newCampaign = {
+            name,
+            email,
+            image,
+            maxDonationAmount,
+            getDonationAmount: 0,
+            lastDate,
+            shortDescription,
+            longDescription,
+            createdAt: new Date(),
+            pause: false,
+            isClose: false,
+            };
+    
+            const result = await donationCampaignsCollection.insertOne(newCampaign);
+            res.send(result);
+        });
+
+        
 
 
 
