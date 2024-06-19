@@ -527,7 +527,53 @@ async function run() {
             res.send(result);
         });
 
-        
+        ///! Payment related: 
+        //! payment intent:
+        app.post("/create-payment-intent", async (req, res) => {
+            const { amount } = req.body;
+    
+            const getAmount = parseInt(amount * 100);
+    
+            const paymentIntent = await stripe.paymentIntents.create({
+            amount: getAmount,
+            currency: "usd",
+            payment_method_types: ["card"],
+            });
+    
+            res.send({ clientSecret: paymentIntent.client_secret });
+        });
+    
+        app.get("/payments/:email", async (req, res) => {
+            const query = { email: req.params.email };
+            const result = await donationCollection.find(query).toArray();
+            res.send(result);
+        });
+    
+        app.post("/payments", async (req, res) => {
+            const payment = req.body;
+    
+            const userDonate = parseFloat(payment?.donation);
+    
+            const id = payment?.petId;
+            const query = { _id: new ObjectId(id) };
+    
+            const findPetToAddMoney = await donationCampaignsCollection.findOne(
+            query
+            );
+            const prevDonation = parseFloat(findPetToAddMoney?.getDonationAmount);
+    
+            const totalDonationAmount = userDonate + prevDonation;
+    
+            const updateDonation = {
+            $set: {
+                getDonationAmount: totalDonationAmount,
+            },
+            };
+            await donationCampaignsCollection.updateOne(query, updateDonation);
+    
+            const paymentResult = await donationCollection.insertOne(payment);
+            res.send(paymentResult);
+        });
 
 
 
