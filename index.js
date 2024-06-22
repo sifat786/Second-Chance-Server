@@ -69,7 +69,7 @@ let donationCampaignsCollection;
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
 
         userCollection = client.db("secondChance").collection("users");
         petCollection = client.db("secondChance").collection("pets");
@@ -597,7 +597,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
 
 
 app.get('/', (req, res) => {
